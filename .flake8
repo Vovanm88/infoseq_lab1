@@ -1,5 +1,6 @@
 [flake8]
 max-line-length = 127
+max-complexity = 10
 exclude = 
     .git,
     __pycache__,
@@ -9,9 +10,5 @@ exclude =
     dist,
     *.egg-info,
     .pytest_cache
-ignore = 
-    E203,  # whitespace before ':'
-    E501,  # line too long (handled by black)
-    W503,  # line break before binary operator
-max-complexity = 10
+ignore = E203, E501, W503
 
