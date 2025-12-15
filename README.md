@@ -167,10 +167,10 @@ Health check эндпоинт (не требует аутентификации)
 
 **Пример реализации:**
 ```python
-# ❌ НЕПРАВИЛЬНО (уязвимо к SQLi):
+# НЕПРАВИЛЬНО (уязвимо к SQLi):
 cursor.execute(f"SELECT * FROM users WHERE username = '{username}'")
 
-# ✅ ПРАВИЛЬНО (защищено):
+# ПРАВИЛЬНО (защищено):
 cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
 ```
 
@@ -346,8 +346,8 @@ lab1/
 
 ## Ссылки
 
-- [GitHub Repository](https://github.com/your-username/secure-rest-api)
-- [CI/CD Pipeline](https://github.com/your-username/secure-rest-api/actions)
+- [GitHub Repository](https://github.com/Vovanm88/infoseq_lab1)
+- [CI/CD Pipeline](https://github.com/Vovanm88/infoseq_lab1/actions/runs/20221859348)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 
 ## Скриншоты отчетов безопасности
