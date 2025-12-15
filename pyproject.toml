@@ -16,7 +16,7 @@ werkzeug = "^3.0.0"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.5"
-safety = "^2.3.5"
+pip-audit = "^2.7.0"
 pytest = "^7.4.0"
 pytest-cov = "^4.1.0"
 black = "^23.12.0"

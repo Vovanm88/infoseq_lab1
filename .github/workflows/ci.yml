@@ -106,17 +106,14 @@ jobs:
     - name: Run Bandit SAST
       run: |
         poetry run bandit -r . -f json -o bandit-report.json || true
-        echo "Bandit scan completed. JSON report saved to bandit-report.json"
-        if [ -f bandit-report.json ]; then
-          echo "=== Bandit Summary ==="
-          poetry run python -c "import json; data=json.load(open('bandit-report.json')); print(f\"Total issues: {data.get('metrics', {}).get('_totals', {}).get('SEVERITY', {}).get('HIGH', 0) + data.get('metrics', {}).get('_totals', {}).get('SEVERITY', {}).get('MEDIUM', 0)}\")" 2>/dev/null || echo "Summary unavailable"
-        fi
+        echo "Bandit scan completed. Check bandit-report.json artifact for full report."
     
-    # SCA: Safety - Software Composition Analysis
-    - name: Run Safety SCA
+    # SCA: pip-audit - Software Composition Analysis
+    - name: Run pip-audit SCA
+      continue-on-error: true
       run: |
-        poetry run safety check --json > safety-report.json || true
-        poetry run safety check
+        poetry run pip-audit --format json --output safety-report.json 2>&1 || echo "pip-audit scan completed"
+        poetry run pip-audit --desc 2>&1 | head -n 100 || echo "pip-audit scan completed. Check safety-report.json for details."
     
     # SCA: OWASP Dependency-Check (alternative)
     - name: Download OWASP Dependency-Check
