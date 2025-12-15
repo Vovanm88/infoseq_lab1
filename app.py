@@ -1,19 +1,25 @@
 """
 Secure REST API with OWASP Top 10 protection
 """
-from flask import Flask, request, jsonify, escape
-from flask_jwt_extended import (
-    JWTManager, jwt_required, create_access_token, get_jwt_identity
-)
-from werkzeug.security import generate_password_hash, check_password_hash
+import os
 import sqlite3
 from datetime import timedelta
-import os
+
+from flask import Flask, escape, jsonify, request
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    get_jwt_identity,
+    jwt_required,
+)
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 
 # Конфигурация JWT
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+app.config['JWT_SECRET_KEY'] = os.environ.get(
+    'JWT_SECRET_KEY', 'your-secret-key-change-in-production'
+)
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 
 jwt = JWTManager(app)
@@ -25,17 +31,20 @@ def init_db():
     """Инициализация базы данных с параметризованными запросами"""
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    
+
     # Используем параметризованные запросы для защиты от SQLi
-    cursor.execute('''
+    cursor.execute(
+        '''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL
         )
-    ''')
-    
-    cursor.execute('''
+    '''
+    )
+
+    cursor.execute(
+        '''
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
@@ -43,8 +52,9 @@ def init_db():
             author_id INTEGER,
             FOREIGN KEY (author_id) REFERENCES users (id)
         )
-    ''')
-    
+    '''
+    )
+
     conn.commit()
     conn.close()
 
@@ -73,7 +83,10 @@ def login():
     data = request.get_json()
     
     if not data or 'username' not in data or 'password' not in data:
-        return jsonify({'error': 'Username and password are required'}), 400
+        return (
+            jsonify({'error': 'Username and password are required'}),
+            400,
+        )
     
     username = data['username']
     password = data['password']
@@ -85,17 +98,19 @@ def login():
     
     # Параметризованный запрос для защиты от SQLi
     cursor = conn.cursor()
-    cursor.execute('SELECT id, password_hash FROM users WHERE username = ?', (username,))
+    cursor.execute(
+        'SELECT id, password_hash FROM users WHERE username = ?', (username,)
+    )
     user = cursor.fetchone()
     conn.close()
     
     if user and check_password_hash(user['password_hash'], password):
         # Создание JWT токена
         access_token = create_access_token(identity=user['id'])
-        return jsonify({
-            'access_token': access_token,
-            'token_type': 'Bearer'
-        }), 200
+        return (
+            jsonify({'access_token': access_token, 'token_type': 'Bearer'}),
+            200,
+        )
     else:
         return jsonify({'error': 'Invalid credentials'}), 401
 
@@ -112,24 +127,28 @@ def get_data():
     
     # Параметризованный запрос для защиты от SQLi
     cursor = conn.cursor()
-    cursor.execute('''
+    cursor.execute(
+        '''
         SELECT p.id, p.title, p.content, u.username as author
         FROM posts p
         JOIN users u ON p.author_id = u.id
         ORDER BY p.id DESC
-    ''')
+    '''
+    )
     posts = cursor.fetchall()
     conn.close()
-    
+
     # Санитизация данных перед отправкой (защита от XSS)
     result = []
     for post in posts:
-        result.append({
-            'id': post['id'],
-            'title': sanitize_input(post['title']),
-            'content': sanitize_input(post['content']),
-            'author': sanitize_input(post['author'])
-        })
+        result.append(
+            {
+                'id': post['id'],
+                'title': sanitize_input(post['title']),
+                'content': sanitize_input(post['content']),
+                'author': sanitize_input(post['author']),
+            }
+        )
     
     return jsonify({'posts': result}), 200
 
@@ -144,7 +163,10 @@ def create_post():
     data = request.get_json()
     
     if not data or 'title' not in data or 'content' not in data:
-        return jsonify({'error': 'Title and content are required'}), 400
+        return (
+            jsonify({'error': 'Title and content are required'}),
+            400,
+        )
     
     title = sanitize_input(data['title'])
     content = sanitize_input(data['content'])
@@ -153,21 +175,29 @@ def create_post():
     
     # Параметризованный запрос для защиты от SQLi
     cursor = conn.cursor()
-    cursor.execute('''
+    cursor.execute(
+        '''
         INSERT INTO posts (title, content, author_id)
         VALUES (?, ?, ?)
-    ''', (title, content, current_user_id))
+    ''',
+        (title, content, current_user_id),
+    )
     
     conn.commit()
     post_id = cursor.lastrowid
     conn.close()
     
-    return jsonify({
-        'id': post_id,
-        'title': title,
-        'content': content,
-        'message': 'Post created successfully'
-    }), 201
+    return (
+        jsonify(
+            {
+                'id': post_id,
+                'title': title,
+                'content': content,
+                'message': 'Post created successfully',
+            }
+        ),
+        201,
+    )
 
 @app.route('/health', methods=['GET'])
 def health():
