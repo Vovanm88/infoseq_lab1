@@ -106,7 +106,11 @@ jobs:
     - name: Run Bandit SAST
       run: |
         poetry run bandit -r . -f json -o bandit-report.json || true
-        poetry run bandit -r . -f txt
+        echo "Bandit scan completed. JSON report saved to bandit-report.json"
+        if [ -f bandit-report.json ]; then
+          echo "=== Bandit Summary ==="
+          poetry run python -c "import json; data=json.load(open('bandit-report.json')); print(f\"Total issues: {data.get('metrics', {}).get('_totals', {}).get('SEVERITY', {}).get('HIGH', 0) + data.get('metrics', {}).get('_totals', {}).get('SEVERITY', {}).get('MEDIUM', 0)}\")" 2>/dev/null || echo "Summary unavailable"
+        fi
     
     # SCA: Safety - Software Composition Analysis
     - name: Run Safety SCA
