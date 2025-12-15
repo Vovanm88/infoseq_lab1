@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "secure-rest-api"
+version = "0.1.0"
+description = "Secure REST API with OWASP Top 10 protection"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+flask = "^3.0.0"
+flask-jwt-extended = "^4.6.0"
+bcrypt = "^4.1.0"
+sqlalchemy = "^2.0.0"
+werkzeug = "^3.0.0"
+
+[tool.poetry.group.dev.dependencies]
+bandit = "^1.7.5"
+safety = "^2.3.5"
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+

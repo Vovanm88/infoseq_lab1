@@ -1,0 +1,76 @@
+name: CI/CD Security Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      run: poetry install --no-interaction
+    
+    # SAST: Bandit - Static Application Security Testing
+    - name: Run Bandit SAST
+      run: |
+        poetry run bandit -r . -f json -o bandit-report.json || true
+        poetry run bandit -r . -f txt
+    
+    # SCA: Safety - Software Composition Analysis
+    - name: Run Safety SCA
+      run: |
+        poetry run safety check --json > safety-report.json || true
+        poetry run safety check
+    
+    # SCA: OWASP Dependency-Check (alternative)
+    - name: Download OWASP Dependency-Check
+      run: |
+        wget https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
+        unzip dependency-check-9.0.9-release.zip
+    
+    - name: Run OWASP Dependency-Check
+      run: |
+        ./dependency-check/bin/dependency-check.sh --project "Secure REST API" --scan . --format JSON --out dependency-check-report.json || true
+        ./dependency-check/bin/dependency-check.sh --project "Secure REST API" --scan . --format HTML --out . || true
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+          dependency-check-report.json
+          dependency-check-report.html
+
