@@ -22,7 +22,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install poetry
-          poetry install --no-root
+          poetry install
 
       - name: Run tests and collect coverage
         run: |
@@ -46,7 +46,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install poetry
-          poetry install --no-root
+          poetry install
 
       - name: Check code formatting with Ruff
         run: poetry run ruff format --check .
@@ -77,7 +77,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install poetry
-          poetry install --no-root
+          poetry install
 
       - name: Run Bandit (SARIF)
         run: |
@@ -99,6 +99,7 @@ jobs:
   sca-snyk:
     name: SCA — Snyk (dependencies + code)
     runs-on: ubuntu-latest
+    if: vars.SNYK_ENABLED == 'true' || secrets.SNYK_TOKEN != ''
     needs: sast
     permissions:
       contents: read
