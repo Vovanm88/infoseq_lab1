@@ -99,7 +99,6 @@ jobs:
   sca-snyk:
     name: SCA — Snyk (dependencies + code)
     runs-on: ubuntu-latest
-    if: vars.SNYK_ENABLED == 'true' || secrets.SNYK_TOKEN != ''
     needs: sast
     permissions:
       contents: read
