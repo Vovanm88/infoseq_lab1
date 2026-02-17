@@ -28,8 +28,16 @@ jobs:
         run: |
           poetry run coverage run -m pytest .
           poetry run coverage report -m
+          poetry run coverage json
         env:
           CI: true
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.json
 
   lint:
     runs-on: ubuntu-latest
@@ -85,20 +93,16 @@ jobs:
           poetry run bandit -r . -f json -o results/bandit.json || true
 
       - name: Upload Bandit artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bandit-report
           path: results/bandit.json
 
-  sca-snyk:
-    name: SCA — Snyk (dependencies + code)
+  sca-pip-audit:
+    name: SCA — pip-audit (dependencies)
     runs-on: ubuntu-latest
     needs: sast
-    permissions:
-      contents: read
-      actions: read
-      security-events: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -108,19 +112,22 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Run Snyk (dependencies)
-        if: secrets.SNYK_TOKEN != ''
-        uses: snyk/actions/python@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --json-file-output=results/snyk-deps.json
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install
 
-      - name: Upload Snyk artifact
-        if: hashFiles('results/snyk-deps.json') != ''
+      - name: Run pip-audit (dependencies scan)
+        run: |
+          mkdir -p results
+          pip-audit --format json > results/pip-audit.json || true
+          pip-audit --desc || true
+
+      - name: Upload pip-audit artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: snyk-report
-          path: results/snyk-deps.json
+          name: pip-audit-report
+          path: results/pip-audit.json
 
