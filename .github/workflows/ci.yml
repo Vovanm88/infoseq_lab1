@@ -1,167 +1,136 @@
-name: CI/CD Pipeline
+name: Python CI
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ 'master', 'dev' ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ 'master', 'dev' ]
 
 jobs:
-  code-quality:
+  test:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      id: setup-python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: latest
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-    
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v4
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-    
-    - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction
-    
-    # Проверка синтаксиса Python
-    - name: Check Python syntax
-      run: |
-        poetry run python -m py_compile app.py init_db.py
-    
-    # Проверка форматирования кода (Black)
-    - name: Check code formatting with Black
-      run: |
-        poetry run black --check --diff . || echo "Code formatting issues found"
-    
-    # Линтер (Flake8)
-    - name: Run Flake8 linter
-      run: |
-        poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
-        poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    
-    # Проверка типов (MyPy)
-    - name: Run MyPy type checker
-      run: |
-        poetry run mypy . --ignore-missing-imports || true
-    
-    # Запуск тестов
-    - name: Run tests with pytest
-      run: |
-        poetry run pytest --cov=. --cov-report=xml --cov-report=html --cov-report=term || true
-    
-    - name: Upload coverage reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: coverage-reports
-        path: |
-          coverage.xml
-          htmlcov/
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  security-scan:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      id: setup-python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: latest
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-    
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v4
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-    
-    - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction
-    
-    # SAST: Bandit - Static Application Security Testing
-    - name: Run Bandit SAST
-      run: |
-        poetry run bandit -r . -f json -o bandit-report.json || true
-        echo "Bandit scan completed. Check bandit-report.json artifact for full report."
-    
-    # SCA: pip-audit - Software Composition Analysis
-    - name: Run pip-audit SCA
-      continue-on-error: true
-      run: |
-        poetry run pip-audit --format json --output safety-report.json 2>&1 || echo "pip-audit scan completed"
-        poetry run pip-audit --desc 2>&1 | head -n 100 || echo "pip-audit scan completed. Check safety-report.json for details."
-    
-    # SCA: OWASP Dependency-Check (alternative)
-    - name: Download OWASP Dependency-Check
-      run: |
-        wget https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
-        unzip dependency-check-9.0.9-release.zip
-    
-    - name: Run OWASP Dependency-Check
-      run: |
-        ./dependency-check/bin/dependency-check.sh --project "Secure REST API" --scan . --format JSON --out dependency-check-report.json || true
-        ./dependency-check/bin/dependency-check.sh --project "Secure REST API" --scan . --format HTML --out . || true
-    
-    - name: Upload security reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: security-reports
-        path: |
-          bandit-report.json
-          safety-report.json
-          dependency-check-report.json
-          dependency-check-report.html
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
 
-  verify:
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --no-root
+
+      - name: Run tests and collect coverage
+        run: |
+          poetry run coverage run -m pytest .
+          poetry run coverage report -m
+        env:
+          CI: true
+
+  lint:
     runs-on: ubuntu-latest
-    needs: [code-quality, security-scan]
-    
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: latest
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-    
-    - name: Install dependencies
-      run: poetry install --no-interaction
-    
-    - name: Verify installation
-      run: |
-        poetry run python --version
-        poetry run python -c "import flask; print('Flask installed successfully')"
-        poetry run python -c "import flask_jwt_extended; print('Flask-JWT-Extended installed successfully')"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --no-root
+
+      - name: Check code formatting with Ruff
+        run: poetry run ruff format --check .
+
+      - name: Run Ruff linters
+        run: poetry run ruff check .
+
+      - name: Run MyPy type checking
+        run: poetry run mypy . --explicit-package-bases
+
+  sast:
+    name: SAST — Bandit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dev deps (Bandit + SARIF support)
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --no-root
+
+      - name: Run Bandit (SARIF)
+        run: |
+          mkdir -p results
+          poetry run bandit -r . --format sarif --output results/bandit.sarif
+
+      - name: Upload Bandit SARIF to GitHub (Code scanning)
+        if: github.event_name == 'push'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results/bandit.sarif
+
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-sarif
+          path: results/bandit.sarif
+
+  sca-snyk:
+    name: SCA — Snyk (dependencies + code)
+    runs-on: ubuntu-latest
+    needs: sast
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Run Snyk (dependencies)
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --sarif-file-output=results/snyk-deps.sarif
+
+      - name: Upload Snyk SARIF to GitHub
+        if: github.event_name == 'push'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results/snyk-deps.sarif
+
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-sarif
+          path: results/snyk-deps.sarif
 
