@@ -14,7 +14,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required,
 )
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 
@@ -128,8 +128,6 @@ def get_data():
     Получение списка постов
     Доступ только для аутентифицированных пользователей
     """
-    current_user_id = get_jwt_identity()
-
     conn = get_db_connection()
 
     # Параметризованный запрос для защиты от SQLi

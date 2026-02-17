@@ -6,17 +6,21 @@ import os
 
 import pytest
 
-from app import app, init_db
+from app import app
+import app as app_module
 
 
 @pytest.fixture
 def client():
     """Создание тестового клиента"""
     app.config["TESTING"] = True
-    app.config["JWT_SECRET_KEY"] = "test-secret-key"
+    app.config["JWT_SECRET_KEY"] = "test-secret-key-longer-than-32-bytes-for-sha256"
 
     # Используем тестовую БД
     test_db = "test_users.db"
+    original_db = app_module.DATABASE
+    app_module.DATABASE = test_db
+    
     if os.path.exists(test_db):
         os.remove(test_db)
 
@@ -59,17 +63,9 @@ def client():
             conn.commit()
             conn.close()
 
-            # Временно заменяем DATABASE на тестовую
-            import app as app_module
-
-            original_db = app_module.DATABASE
-            app_module.DATABASE = test_db
-
         yield client
 
         # Восстанавливаем оригинальную БД
-        import app as app_module
-
         app_module.DATABASE = original_db
 
         # Удаляем тестовую БД
