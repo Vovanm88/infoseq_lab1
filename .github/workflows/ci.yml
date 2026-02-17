@@ -114,17 +114,12 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --sarif-file-output=results/snyk-deps.sarif
+          args: --json-file-output=results/snyk-deps.json
 
-      - name: Upload Snyk SARIF to GitHub
-        if: github.event_name == 'push'
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results/snyk-deps.sarif
-
-      - name: Upload SARIF artifact
+      - name: Upload Snyk artifact
+        if: hashFiles('results/snyk-deps.json') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: snyk-sarif
-          path: results/snyk-deps.sarif
+          name: snyk-report
+          path: results/snyk-deps.json
 
