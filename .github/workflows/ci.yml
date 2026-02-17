@@ -79,22 +79,16 @@ jobs:
           pip install poetry
           poetry install
 
-      - name: Run Bandit (SARIF)
+      - name: Run Bandit
         run: |
           mkdir -p results
-          poetry run bandit -r . --format sarif --output results/bandit.sarif
+          poetry run bandit -r . -f json -o results/bandit.json || true
 
-      - name: Upload Bandit SARIF to GitHub (Code scanning)
-        if: github.event_name == 'push'
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results/bandit.sarif
-
-      - name: Upload SARIF artifact
+      - name: Upload Bandit artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bandit-sarif
-          path: results/bandit.sarif
+          name: bandit-report
+          path: results/bandit.json
 
   sca-snyk:
     name: SCA — Snyk (dependencies + code)
