@@ -115,13 +115,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install poetry
+          pip install poetry pip-audit
           poetry install
 
       - name: Run pip-audit (dependencies scan)
         run: |
           mkdir -p results
-          pip-audit --format json > results/pip-audit.json || true
+          pip-audit --format json -o results/pip-audit.json || true
           pip-audit --desc || true
 
       - name: Upload pip-audit artifact
