@@ -90,7 +90,7 @@ jobs:
       - name: Run Bandit
         run: |
           mkdir -p results
-          poetry run bandit -r . -f json -o results/bandit.json || true
+          poetry run bandit -r . -x tests -f json -o results/bandit.json || true
 
       - name: Upload Bandit artifact
         if: always()

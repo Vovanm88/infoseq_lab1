@@ -114,7 +114,7 @@ def login():
         # Создание JWT токена
         access_token = create_access_token(identity=user["id"])
         return (
-            jsonify({"access_token": access_token, "token_type": "Bearer"}),
+            jsonify({"access_token": access_token, "token_type": "Bearer"}),  # nosec B105: 'Bearer' — имя схемы авторизации, а не секрет
             200,
         )
     else:
@@ -214,4 +214,10 @@ def health():
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    # Безопасный режим по умолчанию: debug выключен, слушаем только localhost.
+    # Для локальной разработки можно включить FLASK_DEBUG=1, тогда включится debug и bind на 0.0.0.0.
+    debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
+    host = "127.0.0.1"
+    if debug_mode:
+        host = "0.0.0.0"
+    app.run(debug=debug_mode, host=host, port=5000)
